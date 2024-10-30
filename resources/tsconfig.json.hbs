@@ -1,0 +1,30 @@
+{ "compilerOptions": { "outDir":
+{{{default bundler.dist '"dist"'}}}, "strict":
+{{{default tsc.strict true}}}, "esModuleInterop":
+{{{default tsc.esModuleInterop true}}}, "forceConsistentCasingInFileNames":
+{{{default tsc.forceConsistentCasingInFileNames true}}}, "skipLibCheck":
+{{{default tsc.skipLibCheck true}}}, "isolatedModules":
+{{{default tsc.isolatedModules true}}}, "allowSyntheticDefaultImports":
+{{{default tsc.allowSyntheticDefaultImports true}}}, "allowJs":
+{{{default tsc.allowJs true}}},
+{{#if (eq bundler.targetPlatform 'web')}}
+	"lib": ["dom", "dom.iterable", "esnext"], "target":
+	{{{default tsc.target '"es2015"'}}},
+{{else}}
+	"lib":
+	{{{default tsc.lib '["es2021"]'}}}, "target":
+	{{{default tsc.target '"es2022"'}}},
+{{/if}}
+"noFallthroughCasesInSwitch":
+{{{default tsc.noFallthroughCasesInSwitch true}}}, "emitDecoratorMetadata":
+{{{eq bundler.decorators 'legacy'}}}, "experimentalDecorators":
+{{{eq bundler.decorators 'legacy'}}}, "resolveJsonModule":
+{{{default tsc.resolveJsonModule true}}}
+{{#if features.react}}
+	,"jsx":
+	{{{default tsc.jsx '"react-jsx"'}}}
+{{/if}}
+,"preserveWatchOutput":
+{{{default tsc.preserveWatchOutput true}}}
+
+} }

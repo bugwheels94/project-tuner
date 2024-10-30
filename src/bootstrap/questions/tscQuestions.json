@@ -1,0 +1,33 @@
+{
+	"decorators": {
+		"message": "Recommended choices have been made, in case you want to change then please choose that option?",
+		"default": true,
+		"choices": [
+			{
+				"name": "Strict Mode",
+				"value": "strict",
+				"checked": true
+			},
+			{
+				"name": "Treat CommonJS/AMD/UMD modules similar to ES6 modules(esModuleInterop)",
+				"value": "esModuleInterop",
+				"checked": true
+			},
+			{
+				"name": "Skip Lib Checking the d.ts files(skipLibCheck)",
+				"value": "skipLibCheck",
+				"checked": true
+			},
+			{
+				"name": "Isolated Modules",
+				"value": "isolatedModules",
+				"checked": true
+			},
+			{
+				"name": "use new JSX ",
+				"value": "jsx:react-jsx,react",
+				"checked": true
+			}
+		]
+	}
+}

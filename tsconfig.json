@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"lib": ["es5", "es6"],
+		"target": "es2022",
+		"module": "ES2022",
+		"moduleResolution": "bundler",
+		"outDir": "./dist",
+		"noEmit": true,
+
+		"emitDecoratorMetadata": true,
+		"experimentalDecorators": true,
+		"sourceMap": true,
+		"allowJs": true,
+		"skipLibCheck": true,
+		"resolveJsonModule": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"strict": true,
+		"forceConsistentCasingInFileNames": true,
+		"noFallthroughCasesInSwitch": true,
+		"isolatedModules": true
+	},
+	"include": ["src", "*.d.ts"],
+	"exclude": ["node_modules"]
+}

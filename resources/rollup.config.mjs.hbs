@@ -1,0 +1,267 @@
+{{#if features.nodeResolve}}
+	{{ addDevDeps "@rollup/plugin-node-resolve" }}
+	import resolve from '@rollup/plugin-node-resolve';
+{{/if}}
+import dotenv from 'dotenv'
+{{ addDevDeps "dotenv" }}
+{{ addDevDeps "@rollup/plugin-replace" }}
+import replace from '@rollup/plugin-replace';
+
+{{#if features.webApp }}
+{{ addDevDeps "node-html-parser,@rollup/plugin-html,@web/dev-server" }}
+import html, { makeHtmlAttributes } from '@rollup/plugin-html';
+import { parse } from 'node-html-parser';
+{{/if}}
+
+{{#if features.nodeApp}}
+{{ addDevDeps "@rollup/plugin-run" }}
+import run from "@rollup/plugin-run"
+
+{{/if}}
+{{#if answers.general.eslint}}
+{{ addDevDeps "@rollup/plugin-eslint" }}
+import eslint from '@rollup/plugin-eslint';
+{{/if}}
+
+
+
+{{#if features.postcss}}
+	{{ addDevDeps "postcss,rollup-plugin-postcss" }}
+	import postcss from 'rollup-plugin-postcss';
+{{/if}}
+	{{ addDevDeps "rollup-plugin-peer-deps-external" }}
+	import peerDepsExternal from 'rollup-plugin-peer-deps-external';
+{{#if (eq selection.transpiler 'babel')}}
+	{{ addDevDeps "@rollup/plugin-babel" }}
+	import babel from '@rollup/plugin-babel';
+{{/if}}
+
+{{#if (eq selection.transpiler 'sucrase')}}
+	{{ addDevDeps "@rollup/plugin-sucrase" }}
+	import sucrase from '@rollup/plugin-sucrase';
+{{/if}}
+{{#if (eq selection.transpiler 'typescript')}}
+	{{ addDevDeps "@rollup/plugin-typescript" }}
+	import typescript from '@rollup/plugin-typescript';
+{{/if}}
+
+{{#if (eq selection.transpiler 'swc')}}
+	{{ addDevDeps "@rollup/plugin-swc" }}
+	import swc from '@rollup/plugin-swc';
+{{/if}}
+
+{{#if features.image}}
+	{{ addDevDeps "@rollup/plugin-url" }}
+	import url from '@rollup/plugin-url';
+{{/if}}
+
+{{#if features.commonjs}}
+	{{ addDevDeps "@rollup/plugin-commonjs" }}
+	import commonjs from '@rollup/plugin-commonjs';
+{{/if}}
+{{ addDevDeps "fast-glob" }}
+
+import globby from 'fast-glob';
+import path from 'path'; 
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { readFileSync } from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename)
+const extensions = ['.js', '.jsx', '.ts', '.tsx']; 
+let configs = globby.sync(['./{{bundler.entryFile}}']);
+const isDevelopment = !!process.env.ROLLUP_WATCH; 
+const environment = !!process.env.ROLLUP_WATCH ? 'development' : 'production'; 
+
+const config = ({ 
+	input, totalInputFiles }) => {
+		{{#if (or (eq bundler.purpose 'library') (eq bundler.targetPlatform 'node.js'))}}
+			let format = "esm"
+		{{else}}
+			let format = "iife"
+		{{/if}}
+
+	 let output = path.join('./dist', input.replace('/src', '').replace(/\.(tsx|ts|jsx)/,
+'.js')); // we only compile css files because component themes are stored in them and we need them in final theme 
+
+const envs = [".env", ".env.local", `.env.${environment}`, `.env.${environment}.local`];
+const environmentVariables = envs.reduce((acc, env) => {
+	let config = {};
+	try {
+		const envPath = path.resolve(".", env);
+		if (envPath) {
+			config = dotenv.parse(readFileSync(envPath));
+		}
+	} catch (e) {
+	}
+	return { ...acc, ...config }
+}, {});
+
+return { 
+	input, 
+	watch: {
+		{{#if general.answers.nodeApp }}
+    clearScreen: false
+		{{/if}}
+  },
+	output: {
+		file: output, 
+		format,
+
+		// means that input ends with .cli[.extension] 
+		banner: input.match(/\.cli(.[^.]*)?$/) ? '#!/usr/bin/env node' : undefined, 
+},
+	onwarn(warning, warn) {
+		if (warning.code === "THIS_IS_UNDEFINED") return;
+		warn(warning);
+	},
+	external(id, second = "") {
+			const packageJson = JSON.parse(readFileSync(path.join(__dirname, 'package.json')).toString());
+			const isNodeModule = id.includes('node_modules');
+			const dependencies = Object.keys(packageJson.dependencies || {});
+			if (isNodeModule) {
+				const packageName = id.split('/node_modules/')?.[1];
+				if (
+					dependencies.find((devDependency) => {
+						if (packageName.startsWith(devDependency)) return true;
+						return false;
+					})
+				) {
+					return true;
+				}
+			}
+			return totalInputFiles === 1 ? false : true;
+	}
+ , plugins: [ peerDepsExternal(),
+{{#if features.nodeResolve}}
+	resolve({ 
+		extensions, 
+		browser: {{ eq bundler.targetPlatform "web"}}, 
+		exportConditions: [!isDevelopment ? 'development' : undefined],
+	}),
+{{/if}}
+{{#if features.commonjs}}
+	commonjs({}),
+{{/if}}
+{{#if features.image}}
+	url({}),
+{{/if}}
+{{#if features.postcss}}
+	postcss({ extract: !isDevelopment, plugins: [], }),
+{{/if}}
+{{#if (eq selection.transpiler 'sucrase')}}
+	sucrase({ exclude: ['node_modules/**'], transforms: ['typescript'], }),
+{{/if}}
+{{#if (eq selection.transpiler 'swc')}}
+
+	swc({ swc: { jsc: { parser: { 
+		{{#if (or (contains bundler.fileTypes ".tsx") (contains bundler.fileTypes ".ts"))}}
+		syntax: "typescript",
+		{{else}}
+		syntax: "ecmascript",
+		{{/if}}		
+	 tsx:
+	{{contains bundler.fileTypes '.tsx'}}, jsx:
+	{{contains bundler.fileTypes '.jsx'}}, dynamicImport:
+	{{default swc.dynamicImport true}}, privateMethod:
+	{{default swc.privateMethod true}}, functionBind:
+	{{default swc.functionBind true}}, exportDefaultFrom:
+	{{default swc.exportDefaultFrom true}}, exportNamespaceFrom:
+	{{default swc.exportNamespaceFrom true}}, decorators:
+	{{not eq bundler.decorators ''}}, decoratorsBeforeExport:
+	{{default swc.decoratorsBeforeExport true}}, topLevelAwait:
+	{{default swc.topLevelAwait false}}, importMeta:
+	{{default swc.importMeta false}}, preserveAllComments:
+	{{default swc.preserveAllComments false}}, }, transform: { legacyDecorator:
+	{{{eq bundler.decorator 'legacy'}}}, decoratorMetadata:
+	{{{eq bundler.decorator 'legacy'}}},
+	{{#if (eq bundler.decorators 'legacy')}}
+		"decoratorVersion": "2021-12",
+	{{else if (not eq
+	bundler.decorators
+	'stage3')}}
+		"decoratorVersion": "2022-03",
+	{{/if}}
+	{{#if features.react}}
+
+		react: { runtime: 'automatic', development: isDevelopment, useBuiltins: false, refresh: false, },
+	{{/if}}
+	}, target: "{{tsc.compilerOptions.target}}",
+	 loose:
+	{{default swc.looseMode false}},
+	{{#if swc.externalHelpers}}
+		{{ addDevDeps "@swc/helpers" }}
+		"externalHelpers": true,
+	{{/if}}
+	keepClassNames:
+	{{default swc.keepClassNames true}}, }, }, }),
+
+{{/if}}
+{{#if (eq selection.transpiler 'typescript')}}
+	typescript(),
+{{/if}}
+{{#if (eq selection.transpiler 'babel')}}
+	babel({ babelHelpers: format === 'esm' ? 'runtime' : 'bundled', }),
+{{/if}}
+
+	replace(
+		{
+			values: {
+				'process.env.NODE_ENV': JSON.stringify(environment),
+				'import.meta.env.NODE_ENV': JSON.stringify(environment),
+				...addPrefixToKeys(environmentVariables, 'import.meta.env'),
+				...addPrefixToKeys(environmentVariables, 'process.env'),
+			},
+			preventAssignment: true,
+		},
+	),
+	{{#if features.webApp}}
+	html({
+		template: ({ attributes, files, meta, publicPath, title }) => {
+			let htmlFile;
+			try {
+				htmlFile = readFileSync(path.join('public', 'index.html'), 'utf-8');
+			} catch (e) {
+				htmlFile = '<!DOCTYPE html><html lang="en"><head></head><body></body></html>';
+			}
+			const root = parse(htmlFile);
+			const head = root.getElementsByTagName('head')[0];
+			const body = root.getElementsByTagName('body')[0];
+			body.insertAdjacentHTML('beforeend', `<div id="root"></div>`);
+
+			meta.forEach((input) => {
+				const attrs = makeHtmlAttributes(input);
+				head.insertAdjacentHTML('beforeend', `<meta${attrs}>`);
+			});
+			(files.css || []).forEach(({ fileName }) => {
+				const attrs = makeHtmlAttributes(attributes.link);
+				head.insertAdjacentHTML('beforeend', `<link href="${publicPath}${fileName}" rel="stylesheet"${attrs}>`);
+			});
+			(files.js || []).forEach(({ fileName }) => {
+				const attrs = makeHtmlAttributes(attributes.script);
+				body.insertAdjacentHTML('beforeend', `<script src="${publicPath}${fileName}"${attrs}></script>`);
+			});
+
+			return root.outerHTML;
+		},
+	}),
+	{{/if}}
+	{{#if answers.general.eslint}}
+	eslint({}),
+	{{/if}}
+	{{#if features.nodeApp}}
+	...(isDevelopment ? [
+		run()
+	] : []),
+	{{/if}}
+], }; }; 
+if (configs.length === 0) console.log("no input files found!")
+export default configs.map((file) => config({ input: file, totalInputFiles: configs.length }));
+
+function addPrefixToKeys(obj) {
+	const result = {}
+	for (var i in obj) {
+		result[`import.meta.env.${i}`] = JSON.stringify(obj[i])
+	}
+}

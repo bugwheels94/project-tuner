@@ -1,0 +1,19 @@
+{
+{{#if (eq selection.transpiler 'typescript')}}
+	"module": "Node16", "moduleResolution": "Node16", "sourceMap": true
+{{else}}
+	"module": "esnext", "moduleResolution": "bundler"
+{{/if}}
+{{#if (eq bundler.purpose 'library')}}
+	{{#if (not eq selection.transpiler 'typescript')}}
+		,"emitDeclarationOnly": true, "declaration": true
+	{{else}}
+		,"declaration": true
+	{{/if}}
+{{else}}
+	,"declaration": false
+	{{#if (not eq selection.transpiler 'typescript')}}
+		,"noEmit": true
+	{{/if}}
+{{/if}}
+}
